@@ -1,0 +1,12 @@
+appId: com.anime.library
+productName: AnimeLibrary
+directories:
+  buildResources: build
+files:
+  - out/**/*
+  - package.json
+linux:
+  target:
+    - AppImage
+  category: AudioVideo
+  icon: build/icon.png
