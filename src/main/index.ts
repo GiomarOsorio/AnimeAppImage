@@ -3,7 +3,9 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import store from './store'
 import { scanLibrary } from './library'
-import { fetchMetadata } from './metadata'
+import { fetchMetadata, testMalClientId } from './metadata'
+import type { ControlsConfig } from '../shared/types'
+import { DEFAULT_CONTROLS } from '../shared/types'
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -35,7 +37,7 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
-  electronApp.setAppUserModelId('com.anime.library')
+  electronApp.setAppUserModelId('com.giomarosorio.animeappimage')
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
@@ -56,9 +58,20 @@ app.whenReady().then(() => {
 
   ipcMain.handle('settings:get', () => store.store)
 
-  ipcMain.handle('settings:setUseMetadata', (_, value: boolean) => {
-    store.set('useMetadata', value)
-    return value
+  ipcMain.handle('settings:setMalCredentials', (_, clientId: string, clientSecret: string) => {
+    store.set('malClientId', clientId || null)
+    store.set('malClientSecret', clientSecret || null)
+  })
+
+  ipcMain.handle('mal:testClientId', (_, clientId: string) => testMalClientId(clientId))
+
+  ipcMain.handle('settings:setControls', (_, controls: ControlsConfig) => {
+    store.set('controls', controls)
+  })
+
+  ipcMain.handle('settings:resetControls', () => {
+    store.set('controls', DEFAULT_CONTROLS)
+    return DEFAULT_CONTROLS
   })
 
   ipcMain.handle('favorites:toggle', (_, animeName: string) => {
@@ -71,8 +84,7 @@ app.whenReady().then(() => {
   })
 
   ipcMain.handle('metadata:fetch', async (_, title: string) => {
-    if (!store.get('useMetadata')) return null
-    return fetchMetadata(title)
+    return fetchMetadata(title, store.get('malClientId'))
   })
 
   createWindow()

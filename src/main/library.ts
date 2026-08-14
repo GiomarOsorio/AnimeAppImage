@@ -18,7 +18,12 @@ async function listEpisodes(dir: string): Promise<Episode[]> {
 }
 
 export async function scanLibrary(rootDir: string): Promise<Anime[]> {
-  const animeNames = await listDirs(rootDir)
+  let animeNames: string[]
+  try {
+    animeNames = await listDirs(rootDir)
+  } catch {
+    return []
+  }
   const animes: Anime[] = []
 
   for (const animeName of animeNames) {
