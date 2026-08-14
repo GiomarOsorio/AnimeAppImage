@@ -4,9 +4,10 @@ const JIKAN_URL = 'https://api.jikan.moe/v4/anime'
 const MAL_URL = 'https://api.myanimelist.net/v2/anime'
 const MYMEMORY_URL = 'https://api.mymemory.translated.net/get'
 
-// Jikan rate limit: 3 req/s, 60 req/min. Serialize with a floor delay between calls.
+// Jikan's sustained limit is 60 req/min (not just the 3 req/s burst cap), so the
+// floor delay must average out to >=1s/call. Same queue also throttles MAL calls.
 let lastCallAt = 0
-const MIN_INTERVAL_MS = 400
+const MIN_INTERVAL_MS = 1000
 let queue: Promise<unknown> = Promise.resolve()
 
 function throttled<T>(fn: () => Promise<T>): Promise<T> {

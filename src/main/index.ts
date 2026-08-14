@@ -4,6 +4,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import store from './store'
 import { scanLibrary } from './library'
 import { fetchMetadata, testMalClientId } from './metadata'
+import { getCachedMetadata, setCachedMetadata } from './metadataCache'
 import type { ControlsConfig } from '../shared/types'
 import { DEFAULT_CONTROLS } from '../shared/types'
 
@@ -84,7 +85,12 @@ app.whenReady().then(() => {
   })
 
   ipcMain.handle('metadata:fetch', async (_, title: string) => {
-    return fetchMetadata(title, store.get('malClientId'))
+    const cached = getCachedMetadata(title)
+    if (cached !== undefined) return cached
+
+    const data = await fetchMetadata(title, store.get('malClientId'))
+    setCachedMetadata(title, data)
+    return data
   })
 
   createWindow()
