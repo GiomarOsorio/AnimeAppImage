@@ -1,19 +1,7 @@
 import { useCallback } from 'react'
 import { NAV_ACTIONS, NAV_ACTION_LABELS, type ControlsConfig, type NavAction } from '../../../shared/types'
 import { useControllerNav } from '../hooks/useControllerNav'
-
-const GAMEPAD_BUTTON_LABELS: Record<number, string> = {
-  0: 'A',
-  1: 'B',
-  2: 'X',
-  3: 'Y',
-  8: 'Select',
-  9: 'Start',
-  12: 'D-pad ↑',
-  13: 'D-pad ↓',
-  14: 'D-pad ←',
-  15: 'D-pad →'
-}
+import { gamepadLabel } from '../utils/gamepadLabels'
 
 interface Props {
   controls: ControlsConfig
@@ -47,9 +35,7 @@ export default function HelpModal({ controls, onClose }: Props): JSX.Element {
               <tr key={action}>
                 <td>{NAV_ACTION_LABELS[action]}</td>
                 <td>{controls.keyboard[action]}</td>
-                <td>
-                  {GAMEPAD_BUTTON_LABELS[controls.gamepad[action]] ?? `Botón ${controls.gamepad[action]}`}
-                </td>
+                <td>{gamepadLabel(controls.gamepad[action])}</td>
               </tr>
             ))}
           </tbody>

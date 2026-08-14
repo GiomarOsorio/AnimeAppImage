@@ -1,4 +1,5 @@
 import type { ControlsConfig } from '../../../shared/types'
+import { gamepadLabel } from '../utils/gamepadLabels'
 
 interface Props {
   controls: ControlsConfig
@@ -10,10 +11,10 @@ export default function TopBar({ controls, onOpenSettings, onOpenHelp }: Props):
   return (
     <div className="top-bar">
       <button className="top-bar-pill" onClick={onOpenHelp}>
-        Ayuda <span className="key-hint">({controls.keyboard.help})</span>
+        Ayuda <span className="key-hint">({gamepadLabel(controls.gamepad.help)})</span>
       </button>
       <button className="top-bar-pill" onClick={onOpenSettings}>
-        Configuración <span className="key-hint">({controls.keyboard.settings})</span>
+        Configuración <span className="key-hint">({gamepadLabel(controls.gamepad.settings)})</span>
       </button>
     </div>
   )

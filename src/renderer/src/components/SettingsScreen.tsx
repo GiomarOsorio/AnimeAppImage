@@ -2,25 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { NAV_ACTIONS, NAV_ACTION_LABELS, type ControlsConfig, type NavAction } from '../../../shared/types'
 import { useControllerNav } from '../hooks/useControllerNav'
 import { useCaptureInput } from '../hooks/useCaptureInput'
+import { gamepadLabel } from '../utils/gamepadLabels'
 
 const TABS = ['Videos', 'MyAnimeList Metadata', 'Controles'] as const
-
-const GAMEPAD_BUTTON_LABELS: Record<number, string> = {
-  0: 'A',
-  1: 'B',
-  2: 'X',
-  3: 'Y',
-  8: 'Select',
-  9: 'Start',
-  12: 'D-pad ↑',
-  13: 'D-pad ↓',
-  14: 'D-pad ←',
-  15: 'D-pad →'
-}
-
-function gamepadLabel(index: number): string {
-  return GAMEPAD_BUTTON_LABELS[index] ?? `Botón ${index}`
-}
 
 interface Props {
   libraryPath: string | null
@@ -54,6 +38,7 @@ export default function SettingsScreen({
   const [validated, setValidated] = useState(false)
   const [testStatus, setTestStatus] = useState<{ ok: boolean; message: string } | null>(null)
   const [testing, setTesting] = useState(false)
+  const [saveMessage, setSaveMessage] = useState<string | null>(null)
   const [capturingFor, setCapturingFor] = useState<{ action: NavAction; device: 'keyboard' | 'gamepad' } | null>(
     null
   )
@@ -165,7 +150,11 @@ export default function SettingsScreen({
   }
 
   function saveCredentials(): void {
-    window.api.setMalCredentials(clientIdDraft.trim(), clientSecretDraft.trim())
+    window.api.setMalCredentials(clientIdDraft.trim(), clientSecretDraft.trim()).then(() => {
+      setSaveMessage('Configuración guardada')
+      setValidated(false)
+      setTestStatus(null)
+    })
   }
 
   function handleInputBlur(): void {
@@ -215,6 +204,7 @@ export default function SettingsScreen({
                   setClientIdDraft(e.target.value)
                   setValidated(false)
                   setTestStatus(null)
+                  setSaveMessage(null)
                 }}
                 onBlur={handleInputBlur}
                 onKeyDown={handleInputKeyDown}
@@ -230,6 +220,7 @@ export default function SettingsScreen({
                   setClientSecretDraft(e.target.value)
                   setValidated(false)
                   setTestStatus(null)
+                  setSaveMessage(null)
                 }}
                 onBlur={handleInputBlur}
                 onKeyDown={handleInputKeyDown}
@@ -244,6 +235,7 @@ export default function SettingsScreen({
             <div className={`settings-row${focusRow === 3 ? ' focused' : ''}${validated ? '' : ' disabled'}`}>
               Guardar {!validated && '(prueba el Client ID primero)'}
             </div>
+            {saveMessage && <p className="hint ok">{saveMessage}</p>}
           </div>
         )}
 
