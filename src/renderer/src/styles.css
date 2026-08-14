@@ -145,6 +145,86 @@ body {
   overflow-y: auto;
 }
 
+.detail-screen {
+  height: calc(100vh - 56px);
+  overflow-y: auto;
+}
+
+.detail-hero {
+  position: relative;
+  min-height: 55vh;
+  display: flex;
+  align-items: flex-end;
+  padding: 3rem;
+  overflow: hidden;
+}
+
+.detail-hero-backdrop {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: blur(30px) brightness(0.35);
+  transform: scale(1.15);
+}
+
+.detail-hero-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(11, 11, 15, 0.25) 0%, rgba(11, 11, 15, 0.97) 100%);
+}
+
+.detail-hero-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 2rem;
+  align-items: flex-end;
+}
+
+.detail-poster {
+  width: 220px;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  flex-shrink: 0;
+}
+
+.detail-info {
+  max-width: 640px;
+}
+
+.detail-info h1 {
+  font-size: 2.2rem;
+  margin-bottom: 0.75rem;
+}
+
+.detail-badges {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.badge {
+  background: rgba(255, 255, 255, 0.12);
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+}
+
+.detail-synopsis {
+  line-height: 1.5;
+  opacity: 0.9;
+}
+
+.detail-episodes {
+  padding: 2rem 3rem 3rem;
+}
+
+.detail-episodes .season-header:first-child {
+  margin-top: 0;
+}
+
 .episode-list h1 {
   margin-bottom: 1.5rem;
 }

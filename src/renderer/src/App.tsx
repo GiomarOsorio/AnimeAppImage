@@ -3,6 +3,7 @@ import type { Anime, AnimeMetadata, ControlsConfig } from '../../shared/types'
 import { DEFAULT_CONTROLS, type NavAction } from '../../shared/types'
 import LibraryGrid, { GRID_COLUMNS } from './components/LibraryGrid'
 import { flattenEpisodes } from './components/SeasonEpisodeList'
+import AnimeDetailScreen from './components/AnimeDetailScreen'
 import VideoPlayer from './components/VideoPlayer'
 import TopBar from './components/TopBar'
 import HelpModal from './components/HelpModal'
@@ -135,15 +136,11 @@ export default function App(): JSX.Element {
     return (
       <>
         <TopBar controls={controls} onOpenSettings={openSettings} onOpenHelp={() => setHelpOpen(true)} />
-        <div className="episode-list">
-          <h1>{selectedAnime.name}</h1>
-          {episodes.map((ep, index) => (
-            <div key={ep.path} className={`episode-row${index === episodeIndex ? ' focused' : ''}`}>
-              {ep.label}
-            </div>
-          ))}
-          <p className="hint">Esc / B para volver</p>
-        </div>
+        <AnimeDetailScreen
+          anime={selectedAnime}
+          metadata={metadataByName[selectedAnime.name]}
+          episodeIndex={episodeIndex}
+        />
         {helpOpen && <HelpModal controls={controls} onClose={() => setHelpOpen(false)} />}
       </>
     )
