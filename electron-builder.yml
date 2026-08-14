@@ -1,5 +1,5 @@
-appId: com.anime.library
-productName: AnimeLibrary
+appId: com.giomarosorio.animeappimage
+productName: AnimeAppImage
 directories:
   buildResources: build
 files:

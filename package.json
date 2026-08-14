@@ -1,5 +1,5 @@
 {
-  "name": "anime-library",
+  "name": "anime-appimage",
   "version": "0.1.0",
   "description": "Reproductor local de anime, control-first, para Steam Machine",
   "private": true,
