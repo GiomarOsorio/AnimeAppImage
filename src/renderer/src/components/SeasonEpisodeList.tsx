@@ -42,10 +42,14 @@ export default function SeasonEpisodeList({ anime, focusedIndex }: Props): JSX.E
   )
 }
 
-export function flattenEpisodes(anime: Anime): { label: string; path: string }[] {
-  const out: { label: string; path: string }[] = []
+export function flattenEpisodes(
+  anime: Anime
+): { season: string; name: string; label: string; path: string }[] {
+  const out: { season: string; name: string; label: string; path: string }[] = []
   for (const season of anime.seasons) {
-    for (const ep of season.episodes) out.push({ label: `${season.name} - ${ep.name}`, path: ep.path })
+    for (const ep of season.episodes) {
+      out.push({ season: season.name, name: ep.name, label: `${season.name} - ${ep.name}`, path: ep.path })
+    }
   }
   return out
 }

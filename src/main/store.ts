@@ -10,7 +10,9 @@ const store = new Store<Settings>({
     favorites: [],
     malClientId: null,
     malClientSecret: null,
-    controls: DEFAULT_CONTROLS
+    controls: DEFAULT_CONTROLS,
+    watchProgress: {},
+    scanOnStart: true
   }
 })
 

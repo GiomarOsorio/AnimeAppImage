@@ -3,16 +3,27 @@ import { NAV_ACTIONS, NAV_ACTION_LABELS, type ControlsConfig, type NavAction } f
 import { useControllerNav } from '../hooks/useControllerNav'
 import { useCaptureInput } from '../hooks/useCaptureInput'
 import { gamepadLabel } from '../utils/gamepadLabels'
+import ControlsLegend from './ControlsLegend'
+import OnScreenKeyboard from './OnScreenKeyboard'
 
 const TABS = ['Videos', 'MyAnimeList Metadata', 'Controles'] as const
 
 interface Props {
   libraryPath: string | null
+  libraryError: string | null
   controls: ControlsConfig
   malClientId: string | null
   malClientSecret: string | null
+  scanOnStart: boolean
+  animeCount: number
+  missingMetadataCount: number
+  refetchingMetadata: boolean
   onControlsChange: (controls: ControlsConfig) => void
   onLibraryPathChange: (path: string) => void
+  onLibraryPathManualChange: (path: string) => void
+  onScanOnStartChange: (value: boolean) => void
+  onRescan: () => void
+  onRefetchMetadata: () => void
   onOpenHelp: () => void
   onBack: () => void
   disabled: boolean
@@ -20,11 +31,20 @@ interface Props {
 
 export default function SettingsScreen({
   libraryPath,
+  libraryError,
   controls,
   malClientId,
   malClientSecret,
+  scanOnStart,
+  animeCount,
+  missingMetadataCount,
+  refetchingMetadata,
   onControlsChange,
   onLibraryPathChange,
+  onLibraryPathManualChange,
+  onScanOnStartChange,
+  onRescan,
+  onRefetchMetadata,
   onOpenHelp,
   onBack,
   disabled
@@ -32,9 +52,10 @@ export default function SettingsScreen({
   const [activeTab, setActiveTab] = useState(0)
   const [focusRow, setFocusRow] = useState(-1)
   const [focusCol, setFocusCol] = useState<0 | 1>(0)
-  const [editingField, setEditingField] = useState<'clientId' | 'clientSecret' | null>(null)
+  const [editingField, setEditingField] = useState<'clientId' | 'clientSecret' | 'libraryPath' | null>(null)
   const [clientIdDraft, setClientIdDraft] = useState(malClientId ?? '')
   const [clientSecretDraft, setClientSecretDraft] = useState(malClientSecret ?? '')
+  const [libraryPathDraft, setLibraryPathDraft] = useState(libraryPath ?? '')
   const [validated, setValidated] = useState(false)
   const [testStatus, setTestStatus] = useState<{ ok: boolean; message: string } | null>(null)
   const [testing, setTesting] = useState(false)
@@ -45,13 +66,19 @@ export default function SettingsScreen({
 
   const clientIdInputRef = useRef<HTMLInputElement>(null)
   const clientSecretInputRef = useRef<HTMLInputElement>(null)
+  const libraryPathInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (editingField === 'clientId') clientIdInputRef.current?.focus()
     if (editingField === 'clientSecret') clientSecretInputRef.current?.focus()
+    if (editingField === 'libraryPath') libraryPathInputRef.current?.focus()
   }, [editingField])
 
-  const rowCount = activeTab === 0 ? 1 : activeTab === 1 ? 4 : NAV_ACTIONS.length + 1
+  useEffect(() => {
+    setLibraryPathDraft(libraryPath ?? '')
+  }, [libraryPath])
+
+  const rowCount = activeTab === 0 ? 5 : activeTab === 1 ? 4 : NAV_ACTIONS.length + 1
 
   const onAction = useCallback(
     (action: NavAction) => {
@@ -92,9 +119,11 @@ export default function SettingsScreen({
       }
       if (action === 'confirm') {
         if (activeTab === 0) {
-          window.api.selectLibraryFolder().then((path) => {
-            if (path) onLibraryPathChange(path)
-          })
+          if (focusRow === 0) pickFolder()
+          else if (focusRow === 1) setEditingField('libraryPath')
+          else if (focusRow === 2) onScanOnStartChange(!scanOnStart)
+          else if (focusRow === 3) onRescan()
+          else if (focusRow === 4 && !refetchingMetadata && missingMetadataCount > 0) onRefetchMetadata()
         } else if (activeTab === 1) {
           if (focusRow === 0) setEditingField('clientId')
           else if (focusRow === 1) setEditingField('clientSecret')
@@ -109,7 +138,18 @@ export default function SettingsScreen({
         }
       }
     },
-    [focusRow, focusCol, activeTab, rowCount, validated, clientIdDraft, clientSecretDraft]
+    [
+      focusRow,
+      focusCol,
+      activeTab,
+      rowCount,
+      validated,
+      clientIdDraft,
+      clientSecretDraft,
+      scanOnStart,
+      refetchingMetadata,
+      missingMetadataCount
+    ]
   )
 
   useControllerNav({
@@ -157,6 +197,26 @@ export default function SettingsScreen({
     })
   }
 
+  function appendToClientId(ch: string): void {
+    setClientIdDraft((v) => v + ch)
+    setValidated(false)
+    setTestStatus(null)
+    setSaveMessage(null)
+  }
+
+  function backspaceClientId(): void {
+    setClientIdDraft((v) => v.slice(0, -1))
+    setValidated(false)
+    setTestStatus(null)
+    setSaveMessage(null)
+  }
+
+  function pickFolder(): void {
+    window.api.selectLibraryFolder().then((path) => {
+      if (path) onLibraryPathChange(path)
+    })
+  }
+
   function handleInputBlur(): void {
     setEditingField(null)
   }
@@ -165,6 +225,21 @@ export default function SettingsScreen({
     if (e.key === 'Escape' || e.key === controls.keyboard.back) {
       e.preventDefault()
       ;(e.target as HTMLInputElement).blur()
+    }
+  }
+
+  function handleLibraryPathKeyDown(e: React.KeyboardEvent<HTMLInputElement>): void {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      const path = libraryPathDraft.trim()
+      if (path) onLibraryPathManualChange(path)
+      e.currentTarget.blur()
+      return
+    }
+    if (e.key === 'Escape' || e.key === controls.keyboard.back) {
+      e.preventDefault()
+      setLibraryPathDraft(libraryPath ?? '')
+      e.currentTarget.blur()
     }
   }
 
@@ -178,6 +253,10 @@ export default function SettingsScreen({
             className={`settings-tab${index === activeTab ? ' active' : ''}${
               focusRow === -1 && index === activeTab ? ' focused' : ''
             }`}
+            onClick={() => {
+              setActiveTab(index)
+              setFocusRow(-1)
+            }}
           >
             {tab}
           </div>
@@ -187,14 +266,96 @@ export default function SettingsScreen({
       <div className="settings-content">
         {activeTab === 0 && (
           <div className="settings-tab-panel">
-            <p className="hint">Carpeta actual: {libraryPath ?? '(ninguna)'}</p>
-            <div className={`settings-row${focusRow === 0 ? ' focused' : ''}`}>Elegir carpeta</div>
+            <div className="settings-folder-box">
+              <div className="settings-folder-label">Carpeta actual</div>
+              <div className="settings-folder-path">{libraryPath ?? '(ninguna)'}</div>
+            </div>
+            {libraryError && <p className="hint error">{libraryError}</p>}
+            <div
+              className={`settings-row${focusRow === 0 ? ' focused' : ''}`}
+              onClick={() => {
+                setFocusRow(0)
+                pickFolder()
+              }}
+            >
+              <div>
+                <div className="settings-row-title">Elegir carpeta</div>
+                <div className="settings-row-desc">Abre el diálogo del sistema y vuelve a escanear la biblioteca.</div>
+              </div>
+            </div>
+            <div className={`settings-row${focusRow === 1 ? ' focused' : ''}`} onClick={() => setFocusRow(1)}>
+              <div>
+                <div className="settings-row-title">Ruta manual</div>
+                <div className="settings-row-desc">
+                  Para carpetas de red (NAS) ya montadas: pegá la ruta y presioná Enter.
+                </div>
+              </div>
+              <input
+                ref={libraryPathInputRef}
+                type="text"
+                value={libraryPathDraft}
+                placeholder="/Volumes/NAS/Anime"
+                onChange={(e) => setLibraryPathDraft(e.target.value)}
+                onFocus={() => {
+                  setFocusRow(1)
+                  setEditingField('libraryPath')
+                }}
+                onBlur={handleInputBlur}
+                onKeyDown={handleLibraryPathKeyDown}
+              />
+            </div>
+            <div
+              className={`settings-row${focusRow === 2 ? ' focused' : ''}`}
+              onClick={() => {
+                setFocusRow(2)
+                onScanOnStartChange(!scanOnStart)
+              }}
+            >
+              <span>Escanear al iniciar</span>
+              <div className={`settings-toggle${scanOnStart ? ' on' : ''}`}>
+                <div className="settings-toggle-knob" />
+              </div>
+            </div>
+            <div
+              className={`settings-row${focusRow === 3 ? ' focused' : ''}`}
+              onClick={() => {
+                setFocusRow(3)
+                onRescan()
+              }}
+            >
+              <span>Reescanear ahora</span>
+              <span className="settings-row-meta">
+                {animeCount} series · {missingMetadataCount} sin metadata
+              </span>
+            </div>
+            <div
+              className={`settings-row${focusRow === 4 ? ' focused' : ''}${
+                missingMetadataCount === 0 ? ' disabled' : ''
+              }`}
+              onClick={() => {
+                if (missingMetadataCount === 0 || refetchingMetadata) return
+                setFocusRow(4)
+                onRefetchMetadata()
+              }}
+            >
+              <span>Actualizar metadata</span>
+              <span className="settings-row-meta">
+                {refetchingMetadata
+                  ? 'Buscando...'
+                  : missingMetadataCount === 0
+                    ? 'Todo tiene metadata'
+                    : `${missingMetadataCount} sin datos`}
+              </span>
+            </div>
+            <p className="hint">
+              Estructura esperada: Serie / Temporada / EP01.mp4 · .mp4 .mkv .avi .webm .mov
+            </p>
           </div>
         )}
 
         {activeTab === 1 && (
           <div className="settings-tab-panel">
-            <div className={`settings-row${focusRow === 0 ? ' focused' : ''}`}>
+            <div className={`settings-row${focusRow === 0 ? ' focused' : ''}`} onClick={() => setFocusRow(0)}>
               <span>Client ID</span>
               <input
                 ref={clientIdInputRef}
@@ -206,11 +367,18 @@ export default function SettingsScreen({
                   setTestStatus(null)
                   setSaveMessage(null)
                 }}
+                onFocus={() => {
+                  setFocusRow(0)
+                  setEditingField('clientId')
+                }}
                 onBlur={handleInputBlur}
                 onKeyDown={handleInputKeyDown}
               />
             </div>
-            <div className={`settings-row${focusRow === 1 ? ' focused' : ''}`}>
+            {editingField === 'clientId' && (
+              <OnScreenKeyboard onKey={appendToClientId} onBackspace={backspaceClientId} onSpace={() => appendToClientId(' ')} />
+            )}
+            <div className={`settings-row${focusRow === 1 ? ' focused' : ''}`} onClick={() => setFocusRow(1)}>
               <span>Client Secret</span>
               <input
                 ref={clientSecretInputRef}
@@ -222,17 +390,34 @@ export default function SettingsScreen({
                   setTestStatus(null)
                   setSaveMessage(null)
                 }}
+                onFocus={() => {
+                  setFocusRow(1)
+                  setEditingField('clientSecret')
+                }}
                 onBlur={handleInputBlur}
                 onKeyDown={handleInputKeyDown}
               />
             </div>
-            <div className={`settings-row${focusRow === 2 ? ' focused' : ''}`}>
+            <div
+              className={`settings-row${focusRow === 2 ? ' focused' : ''}`}
+              onClick={() => {
+                setFocusRow(2)
+                runTest()
+              }}
+            >
               {testing ? 'Probando...' : 'Probar'}
             </div>
             {testStatus && (
               <p className={`hint ${testStatus.ok ? 'ok' : 'error'}`}>{testStatus.message}</p>
             )}
-            <div className={`settings-row${focusRow === 3 ? ' focused' : ''}${validated ? '' : ' disabled'}`}>
+            <div
+              className={`settings-row${focusRow === 3 ? ' focused' : ''}${validated ? '' : ' disabled'}`}
+              onClick={() => {
+                if (!validated) return
+                setFocusRow(3)
+                saveCredentials()
+              }}
+            >
               Guardar {!validated && '(prueba el Client ID primero)'}
             </div>
             {saveMessage && <p className="hint ok">{saveMessage}</p>}
@@ -254,6 +439,11 @@ export default function SettingsScreen({
                     className={`bindable${focusRow === index && focusCol === 0 ? ' focused' : ''}${
                       capturingFor?.action === action && capturingFor.device === 'keyboard' ? ' capturing' : ''
                     }`}
+                    onClick={() => {
+                      setFocusRow(index)
+                      setFocusCol(0)
+                      setCapturingFor({ action, device: 'keyboard' })
+                    }}
                   >
                     {capturingFor?.action === action && capturingFor.device === 'keyboard'
                       ? 'Presiona una tecla...'
@@ -263,6 +453,11 @@ export default function SettingsScreen({
                     className={`bindable${focusRow === index && focusCol === 1 ? ' focused' : ''}${
                       capturingFor?.action === action && capturingFor.device === 'gamepad' ? ' capturing' : ''
                     }`}
+                    onClick={() => {
+                      setFocusRow(index)
+                      setFocusCol(1)
+                      setCapturingFor({ action, device: 'gamepad' })
+                    }}
                   >
                     {capturingFor?.action === action && capturingFor.device === 'gamepad'
                       ? 'Presiona un botón...'
@@ -271,14 +466,25 @@ export default function SettingsScreen({
                 </div>
               ))}
             </div>
-            <div className={`settings-row${focusRow === NAV_ACTIONS.length ? ' focused' : ''}`}>
+            <div
+              className={`settings-row${focusRow === NAV_ACTIONS.length ? ' focused' : ''}`}
+              onClick={() => {
+                setFocusRow(NAV_ACTIONS.length)
+                window.api.resetControls().then(onControlsChange)
+              }}
+            >
               Restaurar valores por defecto
             </div>
           </div>
         )}
       </div>
 
-      <p className="hint">Esc / B para volver</p>
+      <ControlsLegend
+        items={[
+          { key: 'A', label: 'Seleccionar', tone: 'accent' },
+          { key: 'B', label: 'Volver' }
+        ]}
+      />
     </div>
   )
 }

@@ -5,11 +5,12 @@ interface Props {
   metadata: AnimeMetadata | null | undefined
   focused: boolean
   isFavorite: boolean
+  onSelect: () => void
 }
 
-export default function AnimeCard({ name, metadata, focused, isFavorite }: Props): JSX.Element {
+export default function AnimeCard({ name, metadata, focused, isFavorite, onSelect }: Props): JSX.Element {
   return (
-    <div className={`anime-card${focused ? ' focused' : ''}`}>
+    <div className={`anime-card${focused ? ' focused' : ''}`} onClick={onSelect}>
       {isFavorite && <span className="favorite-badge">★</span>}
       {metadata?.coverImage ? (
         <img src={metadata.coverImage} alt={name} draggable={false} />

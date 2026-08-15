@@ -14,6 +14,11 @@ export interface Anime {
   seasons: Season[]
 }
 
+export interface LibraryScanResult {
+  animes: Anime[]
+  error: string | null
+}
+
 export interface AnimeMetadata {
   id: number
   title: string
@@ -90,10 +95,20 @@ export const DEFAULT_CONTROLS: ControlsConfig = {
   }
 }
 
+export interface WatchProgress {
+  animeName: string
+  episodePath: string
+  position: number
+  duration: number
+  updatedAt: number
+}
+
 export interface Settings {
   libraryPath: string | null
   favorites: string[]
   malClientId: string | null
   malClientSecret: string | null
   controls: ControlsConfig
+  watchProgress: Record<string, WatchProgress>
+  scanOnStart: boolean
 }
