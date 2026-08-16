@@ -18,7 +18,13 @@ import { DEFAULT_CONTROLS } from '../shared/types'
 // --expose-wayland, que Steam no usa). Si Chromium detecta esa variable intenta conectar
 // como cliente Wayland nativo y gamescope nunca completa el handshake -> queda colgado
 // cargando para siempre. Forzamos X11, que gamescope sí expone siempre (igual que los juegos).
+// El sandbox de Chromium (proceso zygote) necesita namespaces de usuario sin privilegios;
+// varios sistemas Linux (Nobara/Fedora incluidos) los restringen por defecto vía AppArmor/
+// sysctl, y bajo Steam esa restricción aplica igual. Sin esto el zygote muere fatal
+// (zygote_host_impl_linux.cc "Check failed: . : Invalid argument (22)") antes de poder
+// crear el proceso de renderer -> la app nunca llega a mostrar nada.
 if (process.platform === 'linux') {
+  app.commandLine.appendSwitch('no-sandbox')
   app.commandLine.appendSwitch('ozone-platform', 'x11')
   app.commandLine.appendSwitch('ozone-platform-hint', 'x11')
 }
