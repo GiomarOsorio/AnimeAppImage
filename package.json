@@ -1,6 +1,6 @@
 {
   "name": "anime-appimage",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Reproductor local de anime, control-first, para Steam Machine",
   "private": true,
   "type": "module",

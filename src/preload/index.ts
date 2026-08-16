@@ -42,7 +42,25 @@ const api = {
   },
   logMessage: (level: 'info' | 'warn' | 'error', message: string): Promise<void> =>
     ipcRenderer.invoke('log:write', level, message),
-  getLogPath: (): Promise<string> => ipcRenderer.invoke('log:getPath')
+  getLogPath: (): Promise<string> => ipcRenderer.invoke('log:getPath'),
+  runLibraryDownload: (): Promise<{ ok: boolean; message: string }> =>
+    ipcRenderer.invoke('library:runDownload'),
+  onLibraryDownloadStarted: (callback: () => void): (() => void) => {
+    const listener = (): void => callback()
+    ipcRenderer.on('library:download:started', listener)
+    return () => ipcRenderer.removeListener('library:download:started', listener)
+  },
+  onLibraryDownloadOutput: (callback: (line: string) => void): (() => void) => {
+    const listener = (_: Electron.IpcRendererEvent, line: string): void => callback(line)
+    ipcRenderer.on('library:download:output', listener)
+    return () => ipcRenderer.removeListener('library:download:output', listener)
+  },
+  onLibraryDownloadDone: (callback: (result: { ok: boolean; message: string }) => void): (() => void) => {
+    const listener = (_: Electron.IpcRendererEvent, result: { ok: boolean; message: string }): void =>
+      callback(result)
+    ipcRenderer.on('library:download:done', listener)
+    return () => ipcRenderer.removeListener('library:download:done', listener)
+  }
 }
 
 contextBridge.exposeInMainWorld('api', api)

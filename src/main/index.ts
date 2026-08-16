@@ -1,5 +1,6 @@
 import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join } from 'path'
+import { homedir } from 'os'
 import { existsSync } from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import store from './store'
@@ -8,7 +9,7 @@ import { fetchMetadata, testMalClientId } from './metadata'
 import { getCachedMetadata, setCachedMetadata } from './metadataCache'
 import { readLocalMetadata, writeLocalMetadata } from './localMetadata'
 import { registerMediaProtocolScheme, registerMediaProtocolHandler } from './mediaProtocol'
-import { isLibraryUpdateRunning, runJkanimeDl } from './jkanimeDl'
+import { isJkanimeDlRunning, runJkanimeDl } from './jkanimeDl'
 import { initLogger, log, getLogPath, closeLogger } from './logger'
 import type { ControlsConfig } from '../shared/types'
 import { DEFAULT_CONTROLS } from '../shared/types'
@@ -198,10 +199,25 @@ app.whenReady().then(() => {
   ipcMain.handle('library:runUpdate', (event) => {
     const libraryPath = store.get('libraryPath')
     if (!libraryPath) return { ok: false, message: 'No hay carpeta configurada.' }
-    if (isLibraryUpdateRunning()) return { ok: false, message: 'Ya se está actualizando.' }
+    if (isJkanimeDlRunning()) return { ok: false, message: 'Ya hay una operación en curso.' }
 
     const window = BrowserWindow.fromWebContents(event.sender)
-    if (window) runJkanimeDl(libraryPath, window)
+    if (window) runJkanimeDl([libraryPath, '-y'], 'update', window)
+    return { ok: true, message: 'Iniciado' }
+  })
+
+  ipcMain.handle('library:runDownload', (event) => {
+    const libraryPath = store.get('libraryPath')
+    if (!libraryPath) return { ok: false, message: 'No hay carpeta configurada.' }
+    if (isJkanimeDlRunning()) return { ok: false, message: 'Ya hay una operación en curso.' }
+
+    const listPath = join(homedir(), 'animes.txt')
+    if (!existsSync(listPath)) {
+      return { ok: false, message: `No se encontró ${listPath}. Creá ese archivo con la lista de animes a descargar.` }
+    }
+
+    const window = BrowserWindow.fromWebContents(event.sender)
+    if (window) runJkanimeDl([listPath, '-o', libraryPath, '-y'], 'download', window)
     return { ok: true, message: 'Iniciado' }
   })
 

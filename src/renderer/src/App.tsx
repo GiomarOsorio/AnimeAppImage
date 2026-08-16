@@ -37,6 +37,11 @@ export default function App(): JSX.Element {
   const [libraryUpdateResult, setLibraryUpdateResult] = useState<{ ok: boolean; message: string } | null>(
     null
   )
+  const [libraryDownloadRunning, setLibraryDownloadRunning] = useState(false)
+  const [libraryDownloadLine, setLibraryDownloadLine] = useState<string | null>(null)
+  const [libraryDownloadResult, setLibraryDownloadResult] = useState<{ ok: boolean; message: string } | null>(
+    null
+  )
 
   const [gridIndex, setGridIndex] = useState(0)
   const [libraryFocus, setLibraryFocus] = useState<'shelf' | 'grid'>('grid')
@@ -88,10 +93,39 @@ export default function App(): JSX.Element {
     }
   }, [])
 
+  useEffect(() => {
+    const offStarted = window.api.onLibraryDownloadStarted(() => {
+      setLibraryDownloadRunning(true)
+      setLibraryDownloadLine(null)
+      setLibraryDownloadResult(null)
+    })
+    const offOutput = window.api.onLibraryDownloadOutput((line) => {
+      const lastLine = line.trim().split('\n').pop()
+      if (lastLine) setLibraryDownloadLine(lastLine)
+    })
+    const offDone = window.api.onLibraryDownloadDone((result) => {
+      setLibraryDownloadRunning(false)
+      setLibraryDownloadResult(result)
+      if (result.ok) loadLibrary()
+    })
+    return () => {
+      offStarted()
+      offOutput()
+      offDone()
+    }
+  }, [])
+
   function runLibraryUpdate(): void {
     if (libraryUpdateRunning) return
     window.api.runLibraryUpdate().then((result) => {
       if (!result.ok && !libraryUpdateRunning) setLibraryUpdateResult(result)
+    })
+  }
+
+  function runLibraryDownload(): void {
+    if (libraryDownloadRunning) return
+    window.api.runLibraryDownload().then((result) => {
+      if (!result.ok && !libraryDownloadRunning) setLibraryDownloadResult(result)
     })
   }
 
@@ -365,9 +399,18 @@ export default function App(): JSX.Element {
                 <button
                   className={`library-update-btn${libraryUpdateRunning ? ' running' : ''}`}
                   onClick={runLibraryUpdate}
-                  disabled={libraryUpdateRunning}
+                  disabled={libraryUpdateRunning || libraryDownloadRunning}
                 >
                   {libraryUpdateRunning ? 'Actualizando...' : 'Actualizar animes'}
+                </button>
+              )}
+              {libraryPath && (
+                <button
+                  className={`library-update-btn${libraryDownloadRunning ? ' running' : ''}`}
+                  onClick={runLibraryDownload}
+                  disabled={libraryUpdateRunning || libraryDownloadRunning}
+                >
+                  {libraryDownloadRunning ? 'Descargando...' : 'Descargar animes'}
                 </button>
               )}
             </div>
@@ -378,6 +421,21 @@ export default function App(): JSX.Element {
                 }`}
               >
                 {libraryUpdateRunning ? (libraryUpdateLine ?? 'Iniciando jkanime-dl...') : libraryUpdateResult?.message}
+              </div>
+            )}
+            {(libraryDownloadRunning || libraryDownloadResult) && (
+              <div
+                className={`library-update-status${
+                  !libraryDownloadRunning && libraryDownloadResult
+                    ? libraryDownloadResult.ok
+                      ? ' ok'
+                      : ' error'
+                    : ''
+                }`}
+              >
+                {libraryDownloadRunning
+                  ? (libraryDownloadLine ?? 'Iniciando jkanime-dl...')
+                  : libraryDownloadResult?.message}
               </div>
             )}
           </div>
@@ -392,9 +450,16 @@ export default function App(): JSX.Element {
               <button
                 className={`library-update-btn${libraryUpdateRunning ? ' running' : ''}`}
                 onClick={runLibraryUpdate}
-                disabled={libraryUpdateRunning}
+                disabled={libraryUpdateRunning || libraryDownloadRunning}
               >
                 {libraryUpdateRunning ? 'Actualizando...' : 'Actualizar animes'}
+              </button>
+              <button
+                className={`library-update-btn${libraryDownloadRunning ? ' running' : ''}`}
+                onClick={runLibraryDownload}
+                disabled={libraryUpdateRunning || libraryDownloadRunning}
+              >
+                {libraryDownloadRunning ? 'Descargando...' : 'Descargar animes'}
               </button>
             </div>
             {(libraryUpdateRunning || libraryUpdateResult) && (
@@ -404,6 +469,21 @@ export default function App(): JSX.Element {
                 }`}
               >
                 {libraryUpdateRunning ? (libraryUpdateLine ?? 'Iniciando jkanime-dl...') : libraryUpdateResult?.message}
+              </div>
+            )}
+            {(libraryDownloadRunning || libraryDownloadResult) && (
+              <div
+                className={`library-update-status${
+                  !libraryDownloadRunning && libraryDownloadResult
+                    ? libraryDownloadResult.ok
+                      ? ' ok'
+                      : ' error'
+                    : ''
+                }`}
+              >
+                {libraryDownloadRunning
+                  ? (libraryDownloadLine ?? 'Iniciando jkanime-dl...')
+                  : libraryDownloadResult?.message}
               </div>
             )}
             {continueEntry && (

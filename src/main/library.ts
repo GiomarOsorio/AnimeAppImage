@@ -5,6 +5,9 @@ import type { Anime, Episode, LibraryScanResult, Season } from '../shared/types'
 
 const VIDEO_EXTENSIONS = new Set(['.mp4', '.mkv', '.avi', '.webm', '.mov'])
 
+// Carpetas propias de la app en la raíz de la librería (no son animes).
+const RESERVED_ROOT_FOLDERS = new Set(['logs'])
+
 // Network shares (NAS over SMB/NFS) can hang instead of erroring outright on
 // a dropped connection, and transient hiccups (brief disconnects, a share
 // still waking up) are common enough to be worth a couple of quiet retries
@@ -69,7 +72,7 @@ async function listEpisodes(dir: string): Promise<Episode[]> {
 export async function scanLibrary(rootDir: string): Promise<LibraryScanResult> {
   let animeNames: string[]
   try {
-    animeNames = await listDirs(rootDir)
+    animeNames = (await listDirs(rootDir)).filter((name) => !RESERVED_ROOT_FOLDERS.has(name.toLowerCase()))
   } catch (err) {
     return { animes: [], error: describeError(err) }
   }
