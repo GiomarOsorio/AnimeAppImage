@@ -23,10 +23,16 @@ import { DEFAULT_CONTROLS } from '../shared/types'
 // sysctl, y bajo Steam esa restricción aplica igual. Sin esto el zygote muere fatal
 // (zygote_host_impl_linux.cc "Check failed: . : Invalid argument (22)") antes de poder
 // crear el proceso de renderer -> la app nunca llega a mostrar nada.
+// GPU AMD (driver RADV, "not a conformant Vulkan implementation") bajo Wayland/gamescope:
+// Chromium crea la ventana y "pinta" internamente (ready-to-show llega a disparar) pero
+// nunca compone nada visible -> pantalla negra permanente aunque todo lo demás funcione.
+// Es un problema conocido de Chromium+AMD+Wayland; --disable-gpu-compositing fuerza la
+// composición de la ventana por CPU sin tocar la decodificación de video por GPU.
 if (process.platform === 'linux') {
   app.commandLine.appendSwitch('no-sandbox')
   app.commandLine.appendSwitch('ozone-platform', 'x11')
   app.commandLine.appendSwitch('ozone-platform-hint', 'x11')
+  app.commandLine.appendSwitch('disable-gpu-compositing')
 }
 
 initLogger()
