@@ -27,7 +27,7 @@
   "bundle": {
     "active": true,
     "targets": ["appimage"],
-    "category": "AudioVideo",
+    "category": "Video",
     "icon": [
       "icons/32x32.png",
       "icons/64x64.png",
