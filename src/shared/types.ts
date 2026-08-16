@@ -40,6 +40,7 @@ export type NavAction =
   | 'toggleFavorite'
   | 'settings'
   | 'help'
+  | 'quit'
 
 export const NAV_ACTIONS: NavAction[] = [
   'up',
@@ -50,7 +51,8 @@ export const NAV_ACTIONS: NavAction[] = [
   'back',
   'toggleFavorite',
   'settings',
-  'help'
+  'help',
+  'quit'
 ]
 
 export const NAV_ACTION_LABELS: Record<NavAction, string> = {
@@ -62,7 +64,8 @@ export const NAV_ACTION_LABELS: Record<NavAction, string> = {
   back: 'Volver',
   toggleFavorite: 'Favorito',
   settings: 'Configuración',
-  help: 'Ayuda'
+  help: 'Ayuda',
+  quit: 'Salir de la app (mantener)'
 }
 
 export interface ControlsConfig {
@@ -80,7 +83,8 @@ export const DEFAULT_CONTROLS: ControlsConfig = {
     back: 'Escape',
     toggleFavorite: 'f',
     settings: 'F2',
-    help: 'F1'
+    help: 'F1',
+    quit: 'q'
   },
   gamepad: {
     up: 12,
@@ -91,7 +95,8 @@ export const DEFAULT_CONTROLS: ControlsConfig = {
     back: 1, // B
     toggleFavorite: 3, // Y
     settings: 9, // Start
-    help: 8 // Back / Select
+    help: 8, // Back / Select
+    quit: 2 // X (mantener presionado)
   }
 }
 

@@ -11,6 +11,10 @@ interface Options {
 
 const REPEAT_DELAY_MS = 220
 const AXIS_THRESHOLD = 0.5
+// "quit" needs a deliberate hold, not a tap — it's bound to a button that's
+// otherwise unused (X on gamepad, 'q' on keyboard) specifically so an
+// accidental single press can't close the app mid-episode.
+const QUIT_HOLD_MS = 1200
 
 function invert<T extends string | number>(map: Record<NavAction, T>): Map<T, NavAction> {
   const out = new Map<T, NavAction>()
@@ -23,6 +27,9 @@ function invert<T extends string | number>(map: Record<NavAction, T>): Map<T, Na
 export function useControllerNav({ onAction, controls, enabled = true }: Options): void {
   const lastPressRef = useRef<Record<string, number>>({})
   const rafRef = useRef<number>()
+  const quitHoldStartRef = useRef<number | null>(null)
+  const quitFiredRef = useRef(false)
+  const quitKeyTimerRef = useRef<number | null>(null)
 
   useEffect(() => {
     if (!enabled) return
@@ -34,9 +41,25 @@ export function useControllerNav({ onAction, controls, enabled = true }: Options
       const action = keyMap.get(e.key)
       if (!action) return
       e.preventDefault()
+      if (action === 'quit') {
+        if (quitKeyTimerRef.current != null) return
+        quitKeyTimerRef.current = window.setTimeout(() => {
+          quitKeyTimerRef.current = null
+          onAction('quit')
+        }, QUIT_HOLD_MS)
+        return
+      }
       onAction(action)
     }
+    function handleKeyUp(e: KeyboardEvent): void {
+      if (keyMap.get(e.key) !== 'quit') return
+      if (quitKeyTimerRef.current != null) {
+        clearTimeout(quitKeyTimerRef.current)
+        quitKeyTimerRef.current = null
+      }
+    }
     window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('keyup', handleKeyUp)
 
     function pollGamepads(): void {
       const pads = navigator.getGamepads ? navigator.getGamepads() : []
@@ -48,6 +71,21 @@ export function useControllerNav({ onAction, controls, enabled = true }: Options
         pad.buttons.forEach((btn, index) => {
           const action = buttonMap.get(index)
           if (!action) return
+
+          if (action === 'quit') {
+            if (btn.pressed) {
+              if (quitHoldStartRef.current == null) quitHoldStartRef.current = now
+              if (!quitFiredRef.current && now - quitHoldStartRef.current >= QUIT_HOLD_MS) {
+                quitFiredRef.current = true
+                onAction('quit')
+              }
+            } else {
+              quitHoldStartRef.current = null
+              quitFiredRef.current = false
+            }
+            return
+          }
+
           const key = `btn-${pad.index}-${index}`
           if (btn.pressed) {
             const last = lastPressRef.current[key] ?? 0
@@ -91,7 +129,9 @@ export function useControllerNav({ onAction, controls, enabled = true }: Options
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('keyup', handleKeyUp)
       if (rafRef.current) cancelAnimationFrame(rafRef.current)
+      if (quitKeyTimerRef.current != null) clearTimeout(quitKeyTimerRef.current)
     }
   }, [onAction, controls, enabled])
 }

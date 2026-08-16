@@ -1,35 +1,30 @@
 {
   "name": "anime-appimage",
-  "version": "0.2.4",
+  "version": "0.3.0",
   "description": "Reproductor local de anime, control-first, para Steam Machine",
   "private": true,
   "type": "module",
-  "main": "./out/main/index.js",
   "scripts": {
-    "dev": "electron-vite dev",
-    "build": "electron-vite build",
-    "start": "electron-vite preview",
-    "build:linux": "electron-vite build && electron-builder --linux AppImage"
+    "dev:renderer": "vite",
+    "build:renderer": "vite build",
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build"
   },
   "dependencies": {
     "@fontsource/barlow": "^5.3.0",
     "@fontsource/ibm-plex-mono": "^5.3.0",
     "@fontsource/outfit": "^5.3.0",
-    "electron-store": "^10.0.0",
+    "@tauri-apps/api": "^2.11.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "video.js": "^8.23.6"
   },
   "devDependencies": {
-    "@electron-toolkit/tsconfig": "^1.0.1",
-    "@electron-toolkit/utils": "^3.0.0",
+    "@tauri-apps/cli": "^2.11.4",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.3",
-    "electron": "^33.2.0",
-    "electron-builder": "^25.1.8",
-    "electron-vite": "^2.3.0",
-    "sharp": "^0.35.3",
     "typescript": "^5.6.3",
     "vite": "^5.4.10"
   }

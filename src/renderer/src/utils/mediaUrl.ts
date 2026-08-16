@@ -1,9 +1,17 @@
-// "app-media://file/<encoded absolute path>" rather than a triple-slash
-// "app-media:///<path>" — Chromium's URL parser treats registered custom
-// schemes as needing an authority (host), so an empty host before an
-// absolute path resolves inconsistently (net::ERR_FILE_NOT_FOUND). Using a
-// fixed placeholder host plus a single opaque, fully-encoded path segment
-// sidesteps that parsing ambiguity entirely.
+// Video/subtitle files are served by a loopback-only HTTP server started by the Rust
+// backend (see src-tauri/src/media_server.rs) rather than a custom app-media:// scheme —
+// WebKitGTK's handling of custom URI schemes + Range requests for <video> seeking is a
+// rockier, less-tested path than a plain HTTP server, which the WebView can't tell apart
+// from any other video URL.
+let mediaPort: number | null = null
+
+export async function initMediaUrl(): Promise<void> {
+  mediaPort = await window.api.getMediaPort()
+}
+
 export function toMediaUrl(absolutePath: string): string {
-  return `app-media://file/${encodeURIComponent(absolutePath)}`
+  if (mediaPort == null) {
+    throw new Error('mediaPort no inicializado — initMediaUrl() debe resolverse antes de reproducir')
+  }
+  return `http://127.0.0.1:${mediaPort}/${encodeURIComponent(absolutePath)}`
 }

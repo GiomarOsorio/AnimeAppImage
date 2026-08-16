@@ -1,6 +1,8 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import './api'
 import App from './App'
+import { initMediaUrl } from './utils/mediaUrl'
 import '@fontsource/outfit/700.css'
 import '@fontsource/outfit/800.css'
 import '@fontsource/barlow/400.css'
@@ -17,6 +19,8 @@ window.addEventListener('unhandledrejection', (e) => {
   const reason = e.reason instanceof Error ? e.reason.stack || e.reason.message : String(e.reason)
   window.api.logMessage('error', `unhandledrejection: ${reason}`)
 })
+
+await initMediaUrl()
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>

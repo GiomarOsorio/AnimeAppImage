@@ -221,6 +221,10 @@ export default function App(): JSX.Element {
         openSettings()
         return
       }
+      if (action === 'quit') {
+        window.api.quit()
+        return
+      }
 
       if (view === 'library') {
         if (animes.length === 0) {
