@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "AnimeAppImage",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "identifier": "com.giomarosorio.animeappimage",
   "build": {
     "frontendDist": "../dist/renderer",
