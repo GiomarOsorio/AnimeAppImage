@@ -39,7 +39,10 @@ const api = {
       callback(result)
     ipcRenderer.on('library:update:done', listener)
     return () => ipcRenderer.removeListener('library:update:done', listener)
-  }
+  },
+  logMessage: (level: 'info' | 'warn' | 'error', message: string): Promise<void> =>
+    ipcRenderer.invoke('log:write', level, message),
+  getLogPath: (): Promise<string> => ipcRenderer.invoke('log:getPath')
 }
 
 contextBridge.exposeInMainWorld('api', api)

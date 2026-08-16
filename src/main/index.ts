@@ -9,8 +9,28 @@ import { getCachedMetadata, setCachedMetadata } from './metadataCache'
 import { readLocalMetadata, writeLocalMetadata } from './localMetadata'
 import { registerMediaProtocolScheme, registerMediaProtocolHandler } from './mediaProtocol'
 import { isLibraryUpdateRunning, runJkanimeDl } from './jkanimeDl'
+import { initLogger, log, getLogPath, closeLogger } from './logger'
 import type { ControlsConfig } from '../shared/types'
 import { DEFAULT_CONTROLS } from '../shared/types'
+
+// Bajo gamescope (modo HTPC de Steam), WAYLAND_DISPLAY puede quedar heredado en el
+// entorno aunque gamescope no sirva el protocolo Wayland a clientes normales (requiere
+// --expose-wayland, que Steam no usa). Si Chromium detecta esa variable intenta conectar
+// como cliente Wayland nativo y gamescope nunca completa el handshake -> queda colgado
+// cargando para siempre. Forzamos X11, que gamescope sí expone siempre (igual que los juegos).
+if (process.platform === 'linux') {
+  app.commandLine.appendSwitch('ozone-platform', 'x11')
+  app.commandLine.appendSwitch('ozone-platform-hint', 'x11')
+}
+
+initLogger()
+
+process.on('uncaughtException', (err) => {
+  log('error', `uncaughtException: ${err.stack || err.message}`)
+})
+process.on('unhandledRejection', (reason) => {
+  log('error', `unhandledRejection: ${reason instanceof Error ? reason.stack : String(reason)}`)
+})
 
 registerMediaProtocolScheme()
 
@@ -28,7 +48,20 @@ function createWindow(): void {
   })
 
   mainWindow.on('ready-to-show', () => {
+    log('info', 'window: ready-to-show')
     mainWindow.show()
+  })
+  mainWindow.on('close', () => log('info', 'window: close event recibido'))
+  mainWindow.on('closed', () => log('info', 'window: closed'))
+  mainWindow.on('unresponsive', () => log('warn', 'window: no responde (unresponsive)'))
+  mainWindow.on('responsive', () => log('info', 'window: vuelve a responder'))
+
+  mainWindow.webContents.on('did-finish-load', () => log('info', 'renderer: did-finish-load'))
+  mainWindow.webContents.on('did-fail-load', (_e, code, desc, url) => {
+    log('error', `renderer: did-fail-load code=${code} desc="${desc}" url=${url}`)
+  })
+  mainWindow.webContents.on('render-process-gone', (_e, details) => {
+    log('error', `renderer: render-process-gone ${JSON.stringify(details)}`)
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -44,13 +77,29 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
+  log('info', 'app: whenReady')
   electronApp.setAppUserModelId('com.giomarosorio.animeappimage')
 
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
   })
 
+  app.on('child-process-gone', (_e, details) => {
+    log('error', `app: child-process-gone ${JSON.stringify(details)}`)
+  })
+  app.on('before-quit', () => log('info', 'app: before-quit'))
+  app.on('will-quit', () => {
+    log('info', 'app: will-quit')
+    closeLogger()
+  })
+
   registerMediaProtocolHandler()
+
+  ipcMain.handle('log:write', (_, level: 'info' | 'warn' | 'error', message: string) => {
+    log(level, `[renderer] ${message}`)
+  })
+
+  ipcMain.handle('log:getPath', () => getLogPath())
 
   ipcMain.handle('library:get', async () => {
     const libraryPath = store.get('libraryPath')
@@ -152,6 +201,7 @@ app.whenReady().then(() => {
 })
 
 app.on('window-all-closed', () => {
+  log('info', 'app: window-all-closed')
   if (process.platform !== 'darwin') {
     app.quit()
   }
